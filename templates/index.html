@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <link rel="shortcut icon" href="#" />
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>wordcloud_generate</title>
+
+      <style>
+          .xue {
+              background-image: url("../static/back.jpg");
+              background-repeat:no-repeat;
+              background-size: 100% 100%;
+          }
+          .text{
+              display: block;
+              width: 100%;
+              height: 140px;
+              margin-top: 10px;
+              margin-bottom: 20px;
+              background-color: transparent;
+          }
+      </style>
+
+  <body style="font-family:'LiSu';" class="xue">
+
+    <h2>在线词云生成器</h2>
+    <div style="display: flex;justify-content: space-between" >
+        <div style="width: 45%">
+            <div>
+                <h3 style="color: white">Step 1</h3>
+                <input id="file" name="file" type="file" accept="text/plain" onchange="upload(this)" />
+                <textarea id="txt" class="text"></textarea>
+            </div>
+            <div>
+                <h3 style="color: white">Step 2</h3>
+                <button onclick="cut()">Jieba分词</button>
+                <textarea id="jieba" class="text"></textarea>
+            </div>
+            <div>
+                <h3 style="color: white">Step 3</h3>
+                <button onclick="remove()">去除停用词</button>
+                <textarea id="stopwords" class="text"></textarea>
+            </div>
+        </div>
+
+        <div style="width: 45%">
+            <h3 style="color: white">Step 4</h3>
+            <button onclick="generate()">生成词云图</button>
+            <div style="width: 100%; min-height: 200px; border: 1px solid gray; margin-top: 10px">
+        　　      <img id="img"/>
+            </div>
+            <a href="/wordcloud.jpg">下载词云图</a>
+        </div>
+    </div>
+
+
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.5.1.min.js"></script>
+    <script>
+      // 上传txt文件
+      function upload(obj) {
+          let file = obj.files[0];
+          let formFile = new FormData();
+          formFile.append("file", file); //加入文件对象
+          $.ajax({
+              url: "/upload/file",
+              data: formFile,
+              type: "POST",
+              dataType: "json",
+              cache: false,
+              processData: false,
+              contentType: false,
+              success: function (res) {
+                  document.getElementById('txt').value = res.data;
+              },
+              error: function(err) {
+                  alert('error: 文件上传失败！');
+                  throw new Error();
+              }
+          })
+      }
+
+      // Jieba分词
+      function cut() {
+          const content = document.getElementById('txt').value
+          $.ajax({
+              url: "/cut/jieba",
+              data: JSON.stringify({'content': content}),
+              type: "POST",
+              headers: {
+                'Content-Type':	'application/json',
+              },
+              success: function (res) {
+                  document.getElementById('jieba').value = res.data;
+              },
+              error: function(err) {
+                  alert('error: Jieba分词失败！');
+                  throw new Error();
+              }
+          })
+      }
+
+      // 去除停用词
+      function remove() {
+          const content = document.getElementById('jieba').value.split(',')
+          $.ajax({
+              url: "/remove/stopwords",
+              data: JSON.stringify({'segment': content}),
+              type: "POST",
+              headers: {
+                'Content-Type':	'application/json',
+              },
+              success: function (res) {
+                  document.getElementById('stopwords').value = JSON.stringify(res.data);
+              },
+              error: function(err) {
+                  alert('error: 去除停用词失败！');
+                  throw new Error();
+              }
+          })
+      }
+
+      // 生成词云图
+      function generate() {
+          const content = document.getElementById('stopwords').value
+          $.ajax({
+              url: "/genetate/cloud",
+              data: JSON.stringify({'words': content}),
+              type: "POST",
+              headers: {
+                'Content-Type':	'application/json',
+              },
+              success: function (res) {
+                   document.getElementById('img').src= 'data:image/jpeg;base64,' + res.data;
+              },
+              error: function(err) {
+                  alert('error: 生成词云图失败！');
+                  throw new Error();
+              }
+          })
+      }
+
+
+    </script>
+  </body>
+</html>
